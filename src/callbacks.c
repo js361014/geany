@@ -874,6 +874,11 @@ void on_find_in_files1_activate(GtkMenuItem *menuitem, gpointer user_data)
 	search_show_find_in_files_dialog(NULL);
 }
 
+void on_find_files_activate(GtkMenuItem *menuitem, gpointer user_data)
+{
+	search_show_find_files_dialog();
+}
+
 
 static void get_line_and_offset_from_text(const gchar *text, gint *line_no, gint *offset)
 {

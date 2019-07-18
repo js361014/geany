@@ -556,6 +556,8 @@ static void init_default_kb(void)
 		_("Find Document Usage"), "find_document_usage1");
 	add_kb(group, GEANY_KEYS_SEARCH_MARKALL, NULL,
 		GDK_m, GEANY_PRIMARY_MOD_MASK | GDK_SHIFT_MASK, "find_markall", _("_Mark All"), "mark_all1");
+	add_kb(group, GEANY_KEYS_SEARCH_FINDFILES, NULL,
+		GDK_n, GEANY_PRIMARY_MOD_MASK | GDK_SHIFT_MASK, "menu_findfiles", _("Find Files"), "find_files");
 
 	group = keybindings_get_core_group(GEANY_KEY_GROUP_GOTO);
 
@@ -1545,6 +1547,8 @@ static gboolean cb_func_search_action(guint key_id)
 	{
 		case GEANY_KEYS_SEARCH_FINDINFILES:
 			on_find_in_files1_activate(NULL, NULL); return TRUE;
+		case GEANY_KEYS_SEARCH_FINDFILES:
+			on_find_files_activate(NULL, NULL); return TRUE;
 		case GEANY_KEYS_SEARCH_NEXTMESSAGE:
 			on_next_message1_activate(NULL, NULL); return TRUE;
 		case GEANY_KEYS_SEARCH_PREVIOUSMESSAGE:

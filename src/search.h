@@ -114,6 +114,8 @@ void search_finalize(void);
 
 void search_show_find_dialog(void);
 
+void search_show_find_files_dialog(void);
+
 void search_show_replace_dialog(void);
 
 void search_show_find_in_files_dialog_full(const gchar *text, const gchar *dir);

@@ -125,6 +125,15 @@ find_dlg = {NULL, NULL, FALSE, {0, 0}};
 static struct
 {
 	GtkWidget	*dialog;
+	GtkWidget	*entry_dir;
+	GtkWidget	*entry;
+	GtkListStore	*ls;
+}
+find_files_dlg = {NULL, NULL, NULL, NULL};
+
+static struct
+{
+	GtkWidget	*dialog;
 	GtkWidget	*find_combobox;
 	GtkWidget	*find_entry;
 	GtkWidget	*replace_combobox;
@@ -288,6 +297,7 @@ void search_finalize(void)
 	FREE_WIDGET(find_dlg.dialog);
 	FREE_WIDGET(replace_dlg.dialog);
 	FREE_WIDGET(fif_dlg.dialog);
+	FREE_WIDGET(find_files_dlg.dialog);
 	g_free(search_data.text);
 	g_free(search_data.original_text);
 }
@@ -456,6 +466,133 @@ static void on_expander_activated(GtkExpander *exp, gpointer data)
 	*setting = gtk_expander_get_expanded(exp);
 }
 
+static void update_find_files_auto_complete_list()
+{
+	gchar *search_text = g_strdup(gtk_entry_get_text(GTK_ENTRY(find_files_dlg.entry)));
+	gchar *dir_path = g_strdup(gtk_entry_get_text(GTK_ENTRY(find_files_dlg.entry_dir)));
+	guint files_n;
+	GSList *files_list = utils_get_file_list(dir_path, &files_n, NULL);
+	gtk_list_store_clear(find_files_dlg.ls);
+	if (files_list != NULL) {
+		GtkTreeIter iter;
+		GSList *file;
+		foreach_slist (file, files_list)
+		{
+			gtk_list_store_append(find_files_dlg.ls, &iter);
+			gtk_list_store_set(find_files_dlg.ls, &iter, 0, (gchar*)file->data, -1);
+		}
+	}
+	g_slist_free_full(files_list, g_free);
+	g_free(search_text);
+	g_free(dir_path);
+}
+
+static void on_find_files_entry_dir_changed(GtkWidget *entry_dir, GObject *object)
+{
+	update_find_files_auto_complete_list();
+}
+
+static void on_find_files_dialog_lost_focus(GtkWidget *dialog, GObject *object)
+{
+	gtk_widget_hide(dialog);
+}
+
+static gint on_find_files_match_selected(GtkWidget *completion, GtkTreeModel *tree_model, GtkTreeIter *iter)
+{
+	gchar *selected;
+	gtk_tree_model_get(tree_model, iter, 0, &selected, -1);
+
+	gchar *dir_path = g_strdup(gtk_entry_get_text(GTK_ENTRY(find_files_dlg.entry_dir)));
+	gchar *selected_file_path = g_build_path(G_DIR_SEPARATOR_S, dir_path, selected, NULL);
+
+	document_open_file(selected_file_path, FALSE, NULL, NULL);
+	gtk_widget_hide(find_files_dlg.dialog);
+
+	g_free(dir_path);
+	g_free(selected_file_path);
+
+	return TRUE;
+}
+
+gboolean find_files_name_matching_func(GtkEntryCompletion *completion, const gchar *key,
+	GtkTreeIter *iter, gpointer user_data)
+{
+	GtkTreeModel *model = gtk_entry_completion_get_model(completion);
+	gchar *item;
+	gtk_tree_model_get(model, iter, 0, &item, -1);
+	gboolean matched = g_strrstr(item, key) != NULL;
+	g_free(item);
+	return matched;
+}
+
+static void on_find_files_button_choose_clicked(GtkWidget *button_choose, GObject *object)
+{
+	gtk_widget_show(find_files_dlg.dialog);
+}
+
+static void create_find_files_dialog(void)
+{
+	GtkWidget *vbox, *entry, *sbox;
+	GtkWidget *label, *dir_combo, *dbox, *entry_dir;
+	find_files_dlg.dialog = gtk_dialog_new_with_buttons("",
+		GTK_WINDOW(main_widgets.window), GTK_DIALOG_DESTROY_WITH_PARENT,
+		NULL, NULL, NULL);
+	gtk_window_set_decorated(GTK_WINDOW(find_files_dlg.dialog), FALSE);
+	vbox = ui_dialog_vbox_new(GTK_DIALOG(find_files_dlg.dialog));
+	gtk_box_set_spacing(GTK_BOX(vbox), 9);
+
+	entry = gtk_combo_box_text_new_with_entry();
+	ui_entry_add_clear_icon(GTK_ENTRY(gtk_bin_get_child(GTK_BIN(entry))));
+	gtk_entry_set_width_chars(GTK_ENTRY(gtk_bin_get_child(GTK_BIN(entry))), 50);
+	find_files_dlg.entry = gtk_bin_get_child(GTK_BIN(entry));
+
+	GtkEntryCompletion *completion = gtk_entry_completion_new();
+	gtk_entry_completion_set_match_func(completion,
+		(GtkEntryCompletionMatchFunc)find_files_name_matching_func, NULL, NULL);
+	find_files_dlg.ls = gtk_list_store_new(1, G_TYPE_STRING);
+	gtk_entry_completion_set_model(completion, GTK_TREE_MODEL(find_files_dlg.ls));
+	g_object_unref(G_OBJECT(find_files_dlg.ls));
+	gtk_entry_set_completion(GTK_ENTRY(find_files_dlg.entry), completion);
+	gtk_entry_completion_set_text_column(completion, 0);
+
+	label = gtk_label_new_with_mnemonic(_("_Directory:"));
+	gtk_misc_set_alignment(GTK_MISC(label), 0, 0.5);
+
+	dir_combo = gtk_combo_box_text_new_with_entry();
+	entry_dir = gtk_bin_get_child(GTK_BIN(dir_combo));
+	ui_entry_add_clear_icon(GTK_ENTRY(entry_dir));
+	gtk_entry_set_activates_default(GTK_ENTRY(entry_dir), TRUE);
+	gtk_label_set_mnemonic_widget(GTK_LABEL(label), entry_dir);
+	gtk_entry_set_width_chars(GTK_ENTRY(entry_dir), 50);
+	find_files_dlg.entry_dir = entry_dir;
+	gtk_entry_set_text(GTK_ENTRY(entry_dir), utils_get_current_file_dir_utf8());
+
+	dbox = ui_path_box_new(NULL, GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
+		GTK_ENTRY(entry_dir));
+	GList *dbox_children = gtk_container_get_children(GTK_CONTAINER(dbox));
+	GtkWidget* button_choose = (GtkWidget*)g_list_last(dbox_children)->data;
+	gtk_box_pack_start(GTK_BOX(dbox), label, FALSE, FALSE, 0);
+
+	sbox = gtk_hbox_new(FALSE, 6);
+	gtk_box_pack_start(GTK_BOX(sbox), entry, TRUE, TRUE, 0);
+
+	gtk_box_pack_start(GTK_BOX(vbox), dbox, TRUE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(vbox), sbox, TRUE, FALSE, 0);
+
+	update_find_files_auto_complete_list();
+
+	g_signal_connect(find_files_dlg.dialog, "delete-event",
+		G_CALLBACK(gtk_widget_hide_on_delete), NULL);
+	g_signal_connect(find_files_dlg.dialog, "focus-out-event",
+		G_CALLBACK(on_find_files_dialog_lost_focus), find_files_dlg.dialog);
+	g_signal_connect(G_OBJECT(entry_dir), "changed",
+		G_CALLBACK(on_find_files_entry_dir_changed), entry_dir);
+	g_signal_connect(G_OBJECT(completion), "match-selected",
+		G_CALLBACK(on_find_files_match_selected), completion);
+	g_signal_connect(G_OBJECT(button_choose), "clicked",
+		G_CALLBACK(on_find_files_button_choose_clicked), button_choose);
+}
+
 
 static void create_find_dialog(void)
 {
@@ -553,6 +690,19 @@ static void set_dialog_position(GtkWidget *dialog, gint *position)
 		gtk_window_move(GTK_WINDOW(dialog), position[0], position[1]);
 }
 
+void search_show_find_files_dialog(void)
+{
+	if (find_files_dlg.dialog == NULL)
+	{
+		create_find_files_dialog();
+		gtk_widget_show_all(find_files_dlg.dialog);
+	}
+	else
+	{
+		gtk_widget_show(find_files_dlg.dialog);
+	}
+	gtk_widget_grab_focus(find_files_dlg.entry);
+}
 
 void search_show_find_dialog(void)
 {
