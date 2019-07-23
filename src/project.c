@@ -302,6 +302,11 @@ static void run_open_dialog(GtkDialog *dialog)
 	}
 }
 
+void project_open_directory(void)
+{
+
+}
+
 
 void project_open(void)
 {

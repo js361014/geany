@@ -1337,6 +1337,11 @@ void on_project_open1_activate(GtkMenuItem *menuitem, gpointer user_data)
 	project_open();
 }
 
+void on_project_open_directory_activate(GtkMenuItem *menuitem, gpointer user_data)
+{
+	project_open_directory();
+}
+
 
 void on_project_close1_activate(GtkMenuItem *menuitem, gpointer user_data)
 {

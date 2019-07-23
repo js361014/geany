@@ -7982,6 +7982,15 @@
                           </object>
                         </child>
                         <child>
+                          <object class="GtkMenuItem" id="project_open_directory">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="label" translatable="yes">_Open directory</property>
+                            <property name="use_underline">True</property>
+                            <signal name="activate" handler="on_project_open_directory_activate" swapped="no"/>
+                          </object>
+                        </child>
+                        <child>
                           <object class="GtkMenuItem" id="recent_projects1">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>

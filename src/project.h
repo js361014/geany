@@ -69,6 +69,8 @@ void project_finalize(void);
 
 void project_new(void);
 
+void project_open_directory(void);
+
 void project_open(void);
 
 gboolean project_close(gboolean open_default);
