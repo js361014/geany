@@ -204,6 +204,7 @@ void filetypes_reload_extensions(void);
 
 void filetypes_reload(void);
 
+GeanyFiletype *filetypes_detect(const gchar* file_name, ScintillaObject *sci);
 
 GeanyFiletype *filetypes_detect_from_document(struct GeanyDocument *doc);
 

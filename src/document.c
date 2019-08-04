@@ -2698,7 +2698,6 @@ void document_update_tags(GeanyDocument *doc)
 	document_highlight_tags(doc);
 }
 
-
 /* Re-highlights type keywords without re-parsing the whole document. */
 void document_highlight_tags(GeanyDocument *doc)
 {

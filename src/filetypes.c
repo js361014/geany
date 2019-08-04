@@ -727,6 +727,24 @@ static GeanyFiletype *filetypes_detect_from_file_internal(const gchar *utf8_file
 	return filetypes_detect_from_extension(utf8_filename);
 }
 
+GeanyFiletype *filetypes_detect(const gchar* file_name, ScintillaObject *sci)
+{
+	GeanyFiletype 	*ft;
+	gchar 			*lines[GEANY_FILETYPE_SEARCH_LINES + 1];
+	gint			 i;
+	for (i = 0; i < GEANY_FILETYPE_SEARCH_LINES; ++i)
+	{
+		lines[i] = sci_get_line(sci, i);
+	}
+	lines[i] = NULL;
+	ft = filetypes_detect_from_file_internal(file_name, lines);
+	for (i = 0; i < GEANY_FILETYPE_SEARCH_LINES; ++i)
+	{
+		g_free(lines[i]);
+	}
+	return ft;
+}
+
 
 /* Detect the filetype for the document, checking for a shebang, then filename extension. */
 GeanyFiletype *filetypes_detect_from_document(GeanyDocument *doc)
